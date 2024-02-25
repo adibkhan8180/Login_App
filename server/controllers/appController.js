@@ -4,17 +4,16 @@ import jwt from "jsonwebtoken";
 import ENV from "../config.js";
 
 // middleware for verify user
-export async function verifyUser(req, res, next){
+export async function verifyUser(req, res, next) {
   try {
-    
     const { username } = req.method == "GET" ? req.query : req.body;
 
     //check the user existance
     let exist = await UserModel.findOne({ username });
-    if(!exist) return res.status(404).send( {error : "Can;t find user!"});
+    if (!exist) return res.status(404).send({ error: "Can;t find user!" });
     next();
   } catch (error) {
-    return res.status(400).send({ error: "Authentication Error"});
+    return res.status(400).send({ error: "Authentication Error" });
   }
 }
 
@@ -106,12 +105,50 @@ export async function login(req, res) {
 }
 
 export async function getUser(req, res) {
-  res.json("getUser route");
+  try {
+    const { username } = req.params;
+
+    if (!username) {
+      return res.status(400).send({ error: "Invalid Username" });
+    }
+
+    const user = await UserModel.findOne({ username });
+
+    if (!user) {
+      return res.status(404).send({ error: "User Not Found" });
+    }
+
+    // Omit password from user object
+    const { password, ...userData } = user.toObject();
+
+    return res.status(200).send(userData);
+  } catch (error) {
+    console.error("Error in getUser:", error);
+    return res.status(500).send({ error: "Internal Server Error" });
+  }
 }
 
 export async function updateUser(req, res) {
-  res.json("updateUser route");
+  try {
+    const id = req.query.id;
+
+    if (!id) {
+      return res.status(400).send({ error: "Invalid or Missing ID" });
+    }
+    const body = req.body;
+    
+    const updateResult = await UserModel.updateOne({ _id: id }, body);
+
+    if (updateResult.modifiedCount > 0) {
+      return res.status(200).send({ msg: "Record Updated Successfully" });
+    } else {
+      return res.status(404).send({ error: "User Not Found or No Changes Made" });
+    }
+  } catch (error) {
+    return res.status(500).send({ error: "Internal Server Error" });
+  }
 }
+
 
 export async function generateOTP(req, res) {
   res.json("generateOTP route");
